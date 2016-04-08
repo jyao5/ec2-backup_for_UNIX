@@ -1,0 +1,31 @@
+1.if no security group is specified, a default one is used 
+  A default security group:
+  Allow inbound traffic only from other instances associated with the default
+  security group.
+  Allow all outbound traffic from the instance.
+
+  Since the program is expected to access the instance via ssh. Thus the user
+  must either enable SSH connection in default security group or specify a
+  group with SSH enable. (May be the program can temporarily create a group for
+  operation. Technically this doesn't change user's preset environment)
+
+2.To log in to the instance, a key pair must be used, thus be specified when the
+  instance was created. As elucidated in the manual, when not specifically
+  specified, the program will first search in ~/.ssh/ for valid private/public
+  key pair for creation of and accessing to the temporary instance. 
+  When an identity file is specified in the environment variable, the program
+  is supposed to create/access the instance using the this file. Note: only
+  private key is need and public will be generated using ssh(1) and imported to
+  aws.
+  When aforementioned methods fail, an message of attempt is displayed, and the
+  program try to generate an temporary key(in /tmp) for use. The key will be
+  output to the terminal(for, not violating user's "environment"). Then the key
+  will be destructed.
+  If all methods don't work, an error is displayed.
+
+3.For the sake of not incurring any unexpected expense to the user. An instance
+  type--t1.micro is explicitly specified(whereas the default one is m1.small)
+  And user is not supposed to specified instance type
+  The program is supposed to maintain a list of workable instance image ids. I
+  sense there should be some kind of way to update the image id. Or we could
+  automate the process of acquiring an appropriate ami.

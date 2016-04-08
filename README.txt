@@ -31,3 +31,4 @@ Problem:
 1.What if the identity file is protected by a passphrase, how to relay the prompt and response?
 2.What if AWS FLAG include overlapping options? Replace? Report? Error?
 3.What kind of storage type am I choosing.
+4.What aws instance creation command am I expecting?
