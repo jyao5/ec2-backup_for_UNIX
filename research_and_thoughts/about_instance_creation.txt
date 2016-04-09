@@ -23,6 +23,31 @@
   will be destructed.
   If all methods don't work, an error is displayed.
 
+  More thought:
+  The program is not allowed to set any environment variable(hence I suppose
+  create any file as well)
+  The program assumes the user has set up the ~/.ssh/config file to access
+  instances in EC2 via ssh(1). This implies that ssh will not prompt password
+  for authentication which is not a simple task to provide by its
+  invoker(ec2-backup) through process communication api. Hence the
+  program assume ssh will not perform interactive prompt of any kind for 
+  passkey. Thus if a key is protected by a passphrase, the ec2-backup will
+  assume that a ssh-agent is running and passphrase is already added.
+  If variable is set, an additional option\pointer to specified identity file
+  location is append to ssh.
+  So the problem is to find what identity file is to be used to connect instance
+  via ssh. Location of the indentity file must be used to identify which key to
+  use to run the instance. Personal opinion, what's the point of specify
+  identity file for ssh connection as long as the instance is temporary. The key
+  can also be temporary. Unless this is to conform the "no environment
+  violation" rule. If this is true, then it make sense.
+
+  CONCLUSION: The program must find a private key of some kind provided by the user(it
+  can't generate its own private key--violate local host environment, and upload it,
+  even if just temporarily, to aws ec2). Then it should use the key to somehow
+  find corresponding key name in aws, which has also been set up by the user.
+  The use this key name to run the instance.
+
 3.For the sake of not incurring any unexpected expense to the user. An instance
   type--t1.micro is explicitly specified(whereas the default one is m1.small)
   And user is not supposed to specified instance type

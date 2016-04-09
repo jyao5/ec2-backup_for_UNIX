@@ -14,6 +14,8 @@ Software analysis:
    examined and intelligently added to the instance creation command
  h.The program checks variable EC2_BACKUP_FLAGS_SSH in which user can specifiy
    identify file for ssh connection.
+ i.The program will not set any environment variable or create any file for
+   temporary use.(Thus require the environment being set up to some extent)
 
 Mechanism:
 1.Transfer of data: the program will create an instance and optionally a volumn,

@@ -1,0 +1,48 @@
+1.argument passing
+argument are passed through main(int argc, and char **argv)
+argc(short for argument counter) stands for the number of argument passed to the
+main(include the funciton name).
+argv is a list of pointer to each argument(as a string), note that argv[0] stores the
+function name.( Thus valid argument range: 0 ~ (argc-1) )
+
+2.environment variable extraction
+Programs executed from the shell inherit all of the environment variables from
+the shell.
+In c, char* [secure_]getenv(const char* name) can be used to extract content
+from environment variable. Note, "NAME" return a char pointer to the string.
+The user is responsible to export the variable so as to make it available to
+chile process. The program will deem monitored variable not set if it's null,
+but still give suggestion in verbose mode(provided VERBOSE are set)
+Note: this function is declared in the stdlib.h. Thus a check on whether
+this function is supported may be performed before hand.
+
+3.strcmp takes two cstring(pointer may be) as arguments and output 0 if these
+strings match, return value >0 if fisrt unmatch charater has higher value in
+ptr1 than in ptr2. Similar situation for return value <0.
+
+4.return is an instruction that return from a function call
+  exit is a system call that terminates the current process
+
+  In main(), two makes no difference
+  If in a function, exit() teminate the processes
+
+5.int system(string) is a function that executes system command. Output is direct to
+  standard output, return value corresponds to exit status of the command.
+
+  popen, pclose: pipe stream to or from a process
+  FILE *popen(const char *command, const char *type);
+  int pclose(FILE *stream);
+  Pipe is UNIdirectional, thus type is either read-only or write-only
+  Command is a null-terminated string passed to /bin/sh using -c flag(read from
+  a string instead of standard input)
+  Return NULL when error happened
+  Popen only capture standard output. Use redirection to get/subdue error
+  message. We can redirect stdin and stderr to different file for further
+  processing.
+
+  fgets to extract the output of the commandi into a cstring, line by line.
+  char *fgets(char *s, int size, FILE *stream);// store size-1 charactes into
+  buffer s, or stop at a newline or EOF, '\0' is appended(that's why buffer of
+  size 'size' store only size-1 characters. Return s on success, NULL on error
+  or end encountered.
+
