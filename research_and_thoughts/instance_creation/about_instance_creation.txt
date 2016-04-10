@@ -1,0 +1,100 @@
+1.if no security group is specified, a default one is used 
+  A default security group:
+  Allow inbound traffic only from other instances associated with the default
+  security group.
+  Allow all outbound traffic from the instance.
+
+  Since the program is expected to access the instance via ssh. Thus the user
+  must either enable SSH connection in default security group or specify a
+  group with SSH enable. (May be the program can temporarily create a group for
+  operation. Technically this doesn't change user's preset environment)
+
+2.To log in to the instance, a key pair must be used, thus be specified when the
+  instance was created. As elucidated in the manual, when not specifically
+  specified, the program will first search in ~/.ssh/ for valid private/public
+  key pair for creation of and accessing to the temporary instance. 
+  When an identity file is specified in the environment variable, the program
+  is supposed to create/access the instance using the this file. Note: only
+  private key is need and public will be generated using ssh(1) and imported to
+  aws.
+  When aforementioned methods fail, an message of attempt is displayed, and the
+  program try to generate an temporary key(in /tmp) for use. The key will be
+  output to the terminal(for, not violating user's "environment"). Then the key
+  will be destructed.
+  If all methods don't work, an error is displayed.
+
+  More thought:
+  The program is not allowed to set any environment variable(hence I suppose
+  create any file as well)
+  The program assumes the user has set up the ~/.ssh/config file to access
+  instances in EC2 via ssh(1). This implies that ssh will not prompt password
+  for authentication which is not a simple task to provide by its
+  invoker(ec2-backup) through process communication api. Hence the
+  program assume ssh will not perform interactive prompt of any kind for 
+  passkey. Thus if a key is protected by a passphrase, the ec2-backup will
+  assume that a ssh-agent is running and passphrase is already added.
+  If variable is set, an additional option\pointer to specified identity file
+  location is append to ssh.
+  So the problem is to find what identity file is to be used to connect instance
+  via ssh. Location of the indentity file must be used to identify which key to
+  use to run the instance. Personal opinion, what's the point of specify
+  identity file for ssh connection as long as the instance is temporary. The key
+  can also be temporary. Unless this is to conform the "no environment
+  violation" rule. If this is true, then it make sense.
+
+  CONCLUSION: The program must find a private key of some kind provided by the user(it
+  can't generate its own private key--violate local host environment, and upload it,
+  even if just temporarily, to aws ec2). Then it should use the key to somehow
+  find corresponding key name in aws, which has also been set up by the user.
+  The use this key name to run the instance.
+
+3.For the sake of not incurring any unexpected expense to the user. An instance
+  type--t1.micro is explicitly specified(whereas the default one is m1.small)
+  And user is not supposed to specified instance type
+  The program is supposed to maintain a list of workable instance image ids. I
+  sense there should be some kind of way to update the image id. Or we could
+  automate the process of acquiring an appropriate ami.
+
+
+Steps:
+1. Search for identity files for ssh access. Use the identity files to find
+   keynames.If no identity files were found, report error.(it's nearly not
+   implementable to parse ~/.ssh/config for identity file name, since temporary
+   instance IP is dynamicly allocated. Thus the program only check default key name under
+   .ssh/ or use name offered in the variable)
+
+   ls ~/.ssh/ | grep '^id_rsa$' #and for other default key name
+   if echo $? is 0, use the key to find respective key name in 
+     describe-key- pair 
+   Otherwise check if a file is provided by the variable for use.
+   Otherwise display error and exit(>=1)
+
+    openssl pkey -in ~/.ssh/id_rsa -pubout -outform DSA | openssl sha1 -c
+    openssl pkcs8 -in aws_private.pem -nocrypt -topk8 -outform DER | openssl
+    sha1 -c
+    from:Daniel
+    https://forums.aws.amazon.com/thread.jspa?messageID=386670&tstart=0
+
+    Then match it to describe-key-pair and find key name
+
+    A much more easy way is to generate public key and imported it for temporary
+    use
+    In this case if an identity file is found. We use ssh-keygen to get it's
+    public key and imported the key.
+
+
+1.1 if volunm number is given, check availability zone of the volumn, if region
+    don't match, prompt the user to change region(error)
+    If two matches, create the instance according to the subnet id of the zone.
+    If no vol num is specified, create the instance and volumn with the first
+    zone found in the output of describe-availability-zone.
+II.construct commands, append EC2_BACKUP_FLAGS_AWS to default
+   commands.(the program only allows instance type overwrite, key-name is
+   determined by default or by location in EC2_BACKUP_FLAGS_SSH. Security group
+   names are allowed for accessibility, image id are not allowed for remote
+   command execution is OS dependent, and the program can't handle operations
+   in arbitrary OS.
+III.Run the instances
+IV.Attatch the volumn. If a volumn ID is specified. Zone availability may need extra handling.
+V.send command to instance to mount and backup the directory
+   
