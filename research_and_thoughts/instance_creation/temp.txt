@@ -1,4 +1,0 @@
-SUBNETS	us-east-1d	4091	172.31.0.0/20	True	True	available	subnet-f547fb83	vpc-e4c38b80
-SUBNETS	us-east-1c	4091	172.31.48.0/20	True	True	available	subnet-d09459fa	vpc-e4c38b80
-SUBNETS	us-east-1e	4091	172.31.32.0/20	True	True	available	subnet-d5f963e8	vpc-e4c38b80
-SUBNETS	us-east-1a	4091	172.31.16.0/20	True	True	available	subnet-aaf721f2	vpc-e4c38b80

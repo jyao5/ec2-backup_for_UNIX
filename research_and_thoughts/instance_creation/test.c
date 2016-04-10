@@ -6,71 +6,151 @@ typedef int bool;
 #define true 1
 #define false 0
 
-char* create_command(char* env_var, char* key_name, char* subnet){//return command
-  char buff[256];
-  strcpy(buff, "aws ec2 run-instance --image-id ami-08111162 --output text --query 'Instances[0].InstanceId' --key-name ");
-  strcat(buff, key_name);
-  strcat(buff, " --subnet-id ");
-  strcat(buff, subnet);
-  strcat(buff, " ");
-  strcat(buff, env_var);
+void getVOLzone(char *id, char *zone, char* size){
+  char command[250];
+  strcpy(command, "aws ec2 describe-volumes --volume-ids ");
+  strcat(command, id);
+  strcat(command, " --output text --query 'Volumes[0].[AvailabilityZone,Size]' 2> /dev/null");
 
-  printf("%s\n", buff);
+  FILE *out;
+  out = popen(command, "r");
+  if(out == NULL){
+    printf("Trouble executing:\n %s\n", command);
+    exit(0);
+  }
+  char content[100];
+  fgets(content, sizeof(content) - 1, out);
+
+  char *p = strtok(content, " \t");
+  strcpy(zone, p);
+
+  p = strtok(NULL, " \t");
+  strcpy(size, p);
+  p = strstr(size, "\n");//find and delete the newline
+  *p = '\0';
 }
 
-  /*FILE *fp;
-  char path[1035];
 
-  fp = popen("aws ec2 describe-instances", "r");
-  if (fp == NULL) {
-    printf("C:Failed to run command\n" );
-    exit(1);
-  }
-
-  while (fgets(path, sizeof(path)-1, fp) != NULL) {
-    printf("%s", path);
-  }
-
-  pclose(fp);
-  */
-
-char* import_key(bool key, char* key_path){
-  char buffer[200];
-  strcpy(buffer, "aws ec2 import-key-pair --key-name ec2_backup_key --public-key-material $(openssl rsa -in ");
-  if(key)//if a key is specified
-    strcat(buffer, key_path);
-  else{//otherwise find a valid key to import
-    reserved_file(
-    FILE *fp;
-    fp=popen("ls ~/.ssh/ | grep '[^id_rsa$]'");
-    if (fp == NULL) {
-      printf("C:Failed to run command\n" );
-      exit(1);
-    }
-    char path[100];
-    fgets(path, sizeof(path)-1, fp);
-    if(!strcmp(path, "id_rsa")){
-      strcat(buffer, key_path)
-      break;
-    }
-
-    
-
-
-  strcat(buffer, " -outform DER -pubout | base64 | sed -e :a -e '$!N;s/\\n//;ta')");
-  printf("%s\n", buffer);
-
+void get_region(char *line, char *region){
+  char *p;
+  p = strtok(line, " \t=");
+  p = strtok(NULL, " \t=");
+  strcpy(region, p);
+  p = strstr(region, "\n");
+  *p = '\0';
 }
   
 
+void getAWSzone(char* region){
+  FILE *fp;
+  //
+  char path[200];
+  strcpy(path, getenv("HOME"));
+  strcat(path, "/.aws/config");
+  fp = fopen(path, "r");
+  if(fp == NULL){
+    printf("Can't open following path for zone settings:%s\n", path);
+    exit(1);
+  }
+  char line[100];
+  bool found_flag = false;
+  while (fgets(line, sizeof(line) - 1, fp) != NULL){
+    if(strstr(line, "region") != NULL){
+      get_region(line, region);
+      found_flag = true;
+      return;
+    }
+  }
 
+  if(!found_flag){
+    printf("Coundn't find region info in config\n");
+    exit(1);
+  }
+  
+  fclose(fp);
 
-//create_instance("--instance-type t2.micro, --security-group-id sg-123456", "jesses_key", "sn-123456");
+  return;
+}
+
+int cmp_region(char *aws, char* vol){
+  printf("%s %s\n", aws, vol);
+  if(strstr(vol, aws) != NULL)
+    printf("YES\n");
+  else
+    printf("NO\n");
+}
+
+void get_subnet_id(char *msg, char *s_id){
+  char *p = strtok(msg, "\t ");
+  while((p = strtok(NULL, "\t ")) != NULL){
+    if(strstr(p, "subnet-") != NULL)
+      strcpy(s_id, p);
+  }
+}
+
+void get_avail_zone(char *msg, char *a_zone){
+  char *p = strtok(msg, "\t ");
+  p = strtok(NULL, "\t ");
+  strcpy(a_zone, p);
+}
+
+int create_volume(char* size, char *vol_id, char *avail_zone){
+  char command[200];
+  strcpy(command, "aws ec2 create-volume --size ");
+  strcat(command, size);
+  strcat(command, " --availability-zone ");
+  strcat(command, avail_zone);
+  strcat(command, " --output text --query 'VolumeId'");
+  //printf("%s\n", command);
+  FILE *output;
+  output = popen(command, "r");
+  if(output == NULL){
+    printf("error executing:\n %s\n", command);
+    exit(1);
+  }
+  char buff[20];
+  fgets(buff, sizeof(buff) - 1, output);
+  pclose(output);
+  char *p = strstr(buff, "\n");
+  *p = '\0';
+  strcpy(vol_id, buff);
+  return 0;
+}
+
 
 int main(){
 
-find_key_name(true, "~/.ssh/id_rsa");
+  char avail_zone[100];
+  char msg[200];
+  strcpy(msg, "SUBNETS  us-east-1d  4091  172.31.0.0/20 True  True  available subnet-f547fb83 vpc-e4c38b80\n");
+  get_avail_zone(msg, avail_zone);
 
+  char vol_id[20];
+  create_volume("2", vol_id, "us-east-1a");
+  //printf("%s\n", vol_id);
+
+/*
+  char sub_id[100];
+  char msg[200];
+  strcpy(msg, "SUBNETS  us-east-1d  4091  172.31.0.0/20 True  True  available subnet-f547fb83 vpc-e4c38b80\n");
+  get_subnet_id(msg, sub_id);
+  printf("%s\n", sub_id);*/
+ // printf("%d\n", atof("1.4") > atof("2"));
+/*
+  char volzone[20];
+  char size[20];
+
+  getVOLzone("vol-aff0970d", volzone, size);
+  printf("volzone: %s\n", volzone);
+  printf("size: %s\n", size);
+
+
+  char awszone[20];
+  getAWSzone(awszone);
+  printf("%s\n", awszone);
+
+  cmp_region(awszone, volzone);
+ */ 
 
   return 0;
 }
