@@ -331,19 +331,28 @@ int attach_volume(char *vol_id, char *instance_id){
  strcat(command, vol_id);
  strcat(command, " --instance-id ");
  strcat(command, instance_id);
- printf("command: %s\n", command);
+ strcat(command, " > /dev/null 2> /dev/null");
+ if(system(command) != 0){
+   printf("Error executing: %s\n", command);
+   exit(1);
+ }
 }
 
 int detach_volume(char *vol_id){
  char command[200]; 
  strcpy(command, "aws ec2 detach-volume --volume-id ");
  strcat(command, vol_id);
- printf("command: %s\n", command);
+ strcat(command, " > /dev/null 2> /dev/null");
+ if(system(command) != 0){
+   printf("Error executing: %s\n", command);
+   exit(1);
+ }
+ //printf("command: %s\n", command);
 }
 
 
 //(echo n; echo p; echo 1; echo; echo; echo w) | ssh ubuntu@54.210.38.237 "sudo fdisk /dev/xvdc"
-
+/*
 int main(){
   char vol_id[30];
   strcpy(vol_id, "vol-ed214b45");
@@ -357,4 +366,5 @@ int main(){
   detach_volume(vol_id);
 
 }
+*/
 
