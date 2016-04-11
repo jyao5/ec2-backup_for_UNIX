@@ -3,11 +3,17 @@
 #include<string.h>
 
 
+typedef int bool;
+#define true 1
+#define false 0
+
 void get_region(char *line, char *region){
   char *p;
   p = strtok(line, " \t=");
   p = strtok(NULL, " \t=");
   strcpy(region, p);
+  p = strstr(region, "\n");
+  *p = '\0';
 }
   
 
@@ -53,7 +59,7 @@ void getVOLzone(char *id, char *zone, char* size){
   out = popen(command, "r");
   if(out == NULL){
     printf("Trouble executing:\n %s\n", command);
-    exit(0);
+    exit(1);
   }
   char content[100];
   fgets(content, sizeof(content) - 1, out);
@@ -69,7 +75,7 @@ void getVOLzone(char *id, char *zone, char* size){
 
 
 int cmp_region(char *aws, char* vol){
-  printf("%s %s\n", aws, vol);
+  //printf("%s %s\n", aws, vol);
   if(strstr(vol, aws) != NULL)
     return 0;
   else
@@ -79,9 +85,10 @@ int cmp_region(char *aws, char* vol){
 int get_subnet_id(char *msg, char *s_id){
   char *p = strtok(msg, "\t ");
   while((p = strtok(NULL, "\t ")) != NULL){
-    if(strstr(p, "subnet-") != NULL)
+    if(strstr(p, "subnet-") != NULL){
       strcpy(s_id, p);
       return 0;
+    }
   }
   printf("No subnet id found in msg\n");
   return 1;
@@ -117,7 +124,7 @@ int create_volume(char* size, char *vol_id, char *avail_zone){
   return 0;
 }
 
-void volumn(char *size, char* vol_id, char* s_id, bool vol_provided){
+void volume(char *size, char* vol_id, char* s_id, bool vol_provided){
   char aws_region[20];
   getAWSzone(aws_region);//read ~/.aws/config for current region
   FILE *out;
@@ -125,12 +132,13 @@ void volumn(char *size, char* vol_id, char* s_id, bool vol_provided){
   if(vol_provided){//if vol_id is given, check if zone matches, size sufficient, determing subnet-id
     char vol_zone[20];
     char vol_size[20];
-    getVOLzone(vol-id, vol_zone, vol_size);//given vol-id, get volumn zone
+    getVOLzone(vol_id, vol_zone, vol_size);//given vol-id, get volumn zone
+
     if(cmp_region(aws_region, vol_zone) != 0){//see if volumn is in the current region
       printf("Volumn provided is not in availability zone\n");
       exit(1);
     }
-    if(atoi(size) > atoi(vol-size)){//return true if size greater than volumn size
+    if(atoi(size) > atoi(vol_size)){//return true if size greater than volumn size
       printf("Volumn size is not sufficient\n");
       exit(1);
     }
@@ -138,24 +146,26 @@ void volumn(char *size, char* vol_id, char* s_id, bool vol_provided){
     bool subnet_found = false;
     out=popen("aws ec2 describe-subnets --output text", "r");
     while(fgets(msg, sizeof(msg) - 1, out) != NULL)
-      if(strstr(msg, vol-zone) != NULL){
+      if(strstr(msg, vol_zone) != NULL){
         get_subnet_id(msg, s_id);//read msg, store subnet_id in s_id
         subnet_found = true;
         break;
       }
     pclose(out);
-    if(subnet == false){
+    if(subnet_found == false){
       printf("Somehow can't determine subnet id of %s\n", vol_id);
       exit(1);
     }
   }//end of vol_id is provided
   else{//when no vol_id is provided, then vol_id is used to store created vol-id for display
     //search for a valid subnet_id
-    char avail_zone[20];
+    char avail_zone[50];
     out=popen("aws ec2 describe-subnets --output text", "r");
     if(fgets(msg, sizeof(msg) - 1, out) != NULL){
-      get_sub_id(msg, s_id);
-      get_avail_zone(msg, avail_zone);
+      char msg_buf[200];
+      strcpy(msg_buf, msg);
+      get_subnet_id(msg, s_id);
+      get_avail_zone(msg_buf, avail_zone);
     }
     else{
       printf("No subnet id available\n");
@@ -170,6 +180,12 @@ void volumn(char *size, char* vol_id, char* s_id, bool vol_provided){
       
 
 int main(){
+  //char vol_id[20];
+  char subnet_id[20];
+  volume("3", "vol-e0b5de48", subnet_id, true);
+  //printf("vol_id: %s\n", vol_id);
+  printf("subnet_id: %s\n", subnet_id);
+
 }
 
 
