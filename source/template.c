@@ -54,7 +54,7 @@ int main(int argc, char *argv[]){
 
       
  
-  char* buff = getenv("E");
+  char* buff = getenv("TES");
   printf("TES=%s\n", buff);
   exit(0);
 }
